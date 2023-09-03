@@ -1,13 +1,13 @@
 {
   "expo": {
-    "name": "andriod-clipboard",
-    "slug": "andriod-clipboard",
+    "name": "ClipSync",
+    "slug": "Clipboard-Sync",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/iconx.png",
     "userInterfaceStyle": "light",
     "splash": {
-      "image": "./assets/splash.png",
+      "image": "./assets/splashx.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
@@ -18,13 +18,19 @@
       "supportsTablet": true
     },
     "android": {
+      "package": "com.roxylius.ClipboardSync",
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
+        "foregroundImage": "./assets/iconx.png",
         "backgroundColor": "#ffffff"
       }
     },
     "web": {
       "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "79785074-6510-4630-841e-279769f481b5"
+      }
     }
   }
 }

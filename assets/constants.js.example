@@ -1,0 +1,3 @@
+const SERVER_URL = "https://your-server-url.net";
+
+export { SERVER_URL };
