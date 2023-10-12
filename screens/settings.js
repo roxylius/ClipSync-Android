@@ -1,14 +1,4 @@
-import {
-    StyleSheet,
-    Text,
-    View,
-    StatusBar,
-    useWindowDimensions,
-    Dimensions,
-    Pressable,
-    BackHandler
-} from 'react-native';
-
+import { StyleSheet, Text, View, StatusBar, Dimensions, Pressable, BackHandler } from 'react-native';
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useEffect, useState } from 'react';
 
@@ -17,6 +7,7 @@ import { useEffect, useState } from 'react';
 import { SERVER_URL } from '../assets/constants';
 import Navbar from './components/navbar';
 import { SafeAreaView } from 'react-native-safe-area-context';
+
 
 const Settings = ({ navigation, route }) => {
     //change status bar color
@@ -38,7 +29,6 @@ const Settings = ({ navigation, route }) => {
     });
 
     //gets height and width of the current device
-    const { height, width, scale, fontScale } = useWindowDimensions();
     console.log(Dimensions.get('window').width);
 
 
@@ -178,19 +168,11 @@ const styles = new StyleSheet.create({
         justifyContent: 'flex-start',
         color: "white",
         paddingTop: 80,
-        // height: 900,
-        // display: 'flex',
-        // flexDirection: 'row',
-        // alignItems: 'center',
-        // jus
-        // justifyContent: "space-between",
     },
     item: {
-        // display: 'flex',
         paddingTop: 10,
         paddingLeft: 10,
         paddingBottom: 15,
-        // // position: 'absolute',
         width: Dimensions.get('window').width,
         borderBottomWidth: 1,
         borderBottomColor: "white",

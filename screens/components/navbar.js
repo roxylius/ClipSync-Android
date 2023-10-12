@@ -1,26 +1,14 @@
 import { useState, useEffect } from 'react';
-import {
-    StyleSheet,
-    // Text,
-    View,
-    // SafeAreaView,
-    // TextInput,
-    // Button,
-    // Linking,
-    StatusBar,
-    Image,
-    Pressable
-} from 'react-native';
+import { StyleSheet, View, Image, Pressable } from 'react-native';
 
 //local assets
 const app_logo = require('../../assets/images/new_logo.png');
 const settings_logo = require('../../assets/images/setting.png');
 const back_logo = require('../../assets/images/back.png');
 
+
 //recieves navigator from clipboard.js
 const Navbar = ({ navigator, route }) => {
-    //change status bar color
-    StatusBar.setBackgroundColor("#181818");
 
     //stores screen name 
     const [screenName, setScreenName] = useState('');

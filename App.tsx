@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
-// import { StyleSheet, Text, View, SafeAreaView, TextInput, StatusBar } from 'react-native';
+import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import AsyncStorage from "@react-native-async-storage/async-storage";
-
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { NetworkProvider } from 'react-native-offline';
 
 //routes or elements of stack
 import Signup from './screens/signup';
@@ -36,18 +36,20 @@ const App = () => {
 
 
   return (
-    <NavigationContainer >
-      <SafeAreaProvider >
-        <Stack.Navigator screenOptions={{ headerShown: false }}>
-          {isLogin ? <Stack.Screen name="home" component={Clipboard} /> : <Stack.Screen name="signup" component={Signup} />}
-          {!isLogin ? <Stack.Screen name="home" component={Clipboard} /> : <Stack.Screen name="signup" component={Signup} />}
-          {/* <Stack.Screen name="home" component={Clipboard} /> */}
-          {/* <Stack.Screen name="signup" component={Signup} /> */}
-          <Stack.Screen name="login" component={Login} />
-          <Stack.Screen name="settings" component={Settings} />
-        </Stack.Navigator>
-      </SafeAreaProvider>
-    </NavigationContainer>
+    <>
+      <NetworkProvider>
+        <NavigationContainer >
+          <SafeAreaProvider >
+            <Stack.Navigator screenOptions={{ headerShown: false }}>
+              {isLogin ? <Stack.Screen name="home" component={Clipboard} /> : <Stack.Screen name="signup" component={Signup} />}
+              {!isLogin ? <Stack.Screen name="home" component={Clipboard} /> : <Stack.Screen name="signup" component={Signup} />}
+              <Stack.Screen name="login" component={Login} />
+              <Stack.Screen name="settings" component={Settings} />
+            </Stack.Navigator>
+          </SafeAreaProvider>
+        </NavigationContainer>
+      </NetworkProvider >
+    </>
   );
 }
 

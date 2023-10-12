@@ -1,61 +1,80 @@
-import { useState } from 'react';
-import {
-    StyleSheet,
-    Text,
-    View,
-    SafeAreaView,
-    TextInput,
-    Button,
-    Linking,
-    StatusBar
-} from 'react-native';
+import { useState, useEffect } from 'react';
+import { StyleSheet, Text, View, Linking, StatusBar } from 'react-native';
 import { SERVER_URL } from '../assets/constants.js';
+import { useIsConnected } from 'react-native-offline';
+
 
 //components
 import ButtonThemed from './components/button.js';
 import Input from './components/input.js';
-import { AwesomeButtonShare } from 'react-native-really-awesome-button';
-import { FontAwesome } from '@expo/vector-icons';
-import { useFonts } from 'expo-font';
-
+import Offline from './components/offline.js';
 
 const Signup = ({ navigation }) => {
+    //set statusbar color to color of container default color
+    useEffect(() => {
+        StatusBar.setBackgroundColor("black");
+
+        const interval = setInterval(() => {
+            StatusBar.setBackgroundColor("black");
+        }, 10000);
+
+        return () => clearInterval(interval);
+    })
 
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const [status, setStatus] = useState('');
+    const [auth, setAuth] = useState({
+        statusCode: '',
+        message: ''
+    });
 
-    const handleSignup = async () => {
-        //set statusbar color to color of container default color
-        StatusBar.setBackgroundColor('black');
 
-        console.log(SERVER_URL);
+    //const internet status function
+    const isOnline = useIsConnected();
 
-        const url = await Linking.getInitialURL();
-        console.log('Current URL:', url);
-        console.log(JSON.stringify({ name, email, password }));
-        fetch(SERVER_URL + '/api/signup', {
-            method: 'POST',
-            credentials: 'include',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ name, email, password })
-        }).then(response => response.json())
-            .then(data => console.log(data))
-            .catch(err => console.log("error", err));
+
+    const handleSignup = async (release) => {
+
+        if (name == '' || email == '' || password == '') {
+            //timeout on button progress
+            setTimeout(release, 30);
+
+            setAuth({ statusCode: '401', message: 'Enter The Missing User Field!' });
+        }
+        else {
+            //timeout on button progress
+            setTimeout(release, 10000);
+
+            console.log(SERVER_URL);
+
+            const url = await Linking.getInitialURL();
+            console.log('Current URL:', url);
+            console.log(JSON.stringify({ name, email, password }));
+            fetch(SERVER_URL + '/api/signup', {
+                method: 'POST',
+                credentials: 'include',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ name, email, password })
+            }).then(response => {
+                setAuth(prevVal => ({ ...prevVal, statusCode: response.status }));
+                return response.json();
+            })
+                .then(data => {
+                    setAuth(prevVal => ({ ...prevVal, message: data.message }));
+                })
+                .catch(err => console.log("error", err));
+        }
     };
 
-    // const [loaded] = useFonts({
-    //     JetBrainsMonoLight: require('../assets/fonts/JetBrainsMono-Light.ttf'),
-    //     Roboto: require('../assets/fonts/Roboto-Light.ttf')
-    // });
-
-    // if (!loaded) {
-    //     return null;
-    // }
-
+    useEffect(() => {
+        if (auth.statusCode == '200') {
+            console.log(auth);
+            navigation.navigate('home');
+        }
+    }, [auth])
 
     return (
         <View style={styles.signup}>
@@ -67,7 +86,8 @@ const Signup = ({ navigation }) => {
                 <Input text={email} handleText={text => setEmail(text)} />
                 <Text style={styles.text}>Password</Text>
                 <Input text={password} ifpass={true} handleText={text => setPassword(text)} />
-                <ButtonThemed text='Signup' onPress={handleSignup} type='normal'
+                {auth.statusCode == '200' ? null : <Text style={[styles.smallText, styles.smallTextAlert]}>{auth.message}</Text>}
+                <ButtonThemed text='Signup' onPress={handleSignup} type='localAuth'
                 // fontFamily={'JetBrainsMonoLight'} 
                 />
                 <Text style={styles.smallText}>Already have an account?⠀
@@ -79,6 +99,7 @@ const Signup = ({ navigation }) => {
                 <ButtonThemed text='Google' onPress={handleSignup} type='google' />
                 <ButtonThemed text='Github' onPress={handleSignup} type='github' />
             </View> */}
+            {isOnline ? null : <Offline />}
         </View>
     );
 }
@@ -89,50 +110,38 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         backgroundColor: '#0a0a0a',
-        // borderStyle: 'solid',
-        // borderWidth: 2,
-        // borderColor: 'green'
     },
     loginform: {
-        // borderStyle: 'solid',
-        // borderWidth: 2,
-        // borderColor: 'blue',
         width: "80%"
     },
     heading: {
         color: '#ffffff',
         fontSize: 40,
-        padding: 24,
-        // fontFamily: 'Roboto',
-        // borderStyle: 'solid',
-        // borderWidth: 2,
-        // borderColor: 'red'
+        padding: 24
     },
     text: {
         color: '#f2f2f2',
         alignSelf: 'flex-start',
         fontSize: 25,
         paddingTop: '5%',
-        // fontFamily: 'Roboto'
     },
     subheading: {
         color: 'grey',
         fontSize: 25,
         padding: 20,
-        // borderStyle: 'solid',
-        // borderWidth: 2,
-        // borderColor: 'red'
     },
     smallText: {
         color: '#f2f2f2',
         alignSelf: 'center',
         fontSize: 15,
         paddingTop: '5%',
-        // fontFamily: 'Roboto'
     },
     smallTextlink: {
         color: 'blue',
         textDecorationLine: 'underline'
+    },
+    smallTextAlert: {
+        color: 'red'
     }
 });
 

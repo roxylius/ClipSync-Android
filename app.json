@@ -1,36 +1,4 @@
 {
-  "expo": {
-    "name": "ClipSync",
-    "slug": "Clipboard-Sync",
-    "version": "1.0.0",
-    "orientation": "portrait",
-    "icon": "./assets/iconx.png",
-    "userInterfaceStyle": "light",
-    "splash": {
-      "image": "./assets/splashx.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
-    },
-    "assetBundlePatterns": [
-      "**/*"
-    ],
-    "ios": {
-      "supportsTablet": true
-    },
-    "android": {
-      "package": "com.roxylius.ClipboardSync",
-      "adaptiveIcon": {
-        "foregroundImage": "./assets/iconx.png",
-        "backgroundColor": "#ffffff"
-      }
-    },
-    "web": {
-      "favicon": "./assets/favicon.png"
-    },
-    "extra": {
-      "eas": {
-        "projectId": "79785074-6510-4630-841e-279769f481b5"
-      }
-    }
-  }
+  "name": "ClipSync",
+  "displayName": "ClipSync"
 }

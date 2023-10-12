@@ -1,35 +1,35 @@
-import { Alert, StyleSheet, View, Text, Button, Image, StatusBar, AppState, Pressable, TextInput } from "react-native";
+import { Alert, StyleSheet, View, Text, Image, StatusBar, Pressable, TextInput } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { SERVER_URL } from "../assets/constants";
 import { useEffect, useState } from "react";
 import io from "socket.io-client";
 import * as clipboard from 'expo-clipboard';
 import { SafeAreaView } from 'react-native-safe-area-context';
-// import { useFonts } from 'expo-font';
+import * as Notification from 'expo-notifications';
+import { useIsConnected } from 'react-native-offline';
+
 
 //importing local assets 
-import Input from "./components/input";
+import Clipsync from "../clipboardModule";
 import ButtonThemed from './components/button.js';
 import MobileIcon from '../assets/images/smartphone.png';
 import LaptopIcon from '../assets/images/laptop.png';
 import SendIcon from "../assets/images/send.png";
 import Navbar from "./components/navbar";
+import Offline from "./components/offline";
 
 //etablishes a socket connection to the server 
 const socket = io.connect(SERVER_URL);
 
-// TaskManager.defineTask('backgroundClipboardTask', async () => {
-//     console.log('Background task triggered');
-//     // Perform your background task logic here
-//     // ...
-//     return BackgroundFetch.Result.NewData; // Return the result of the background task
-// });
-
-
 
 const Clipboard = ({ navigation, route }) => {
     //sets status bar color same as the navbar 
-    StatusBar.setBackgroundColor('#282828');
+    useEffect(() => {
+        StatusBar.setBackgroundColor("#181818");
+    })
+
+    //const internet status function
+    const isOnline = useIsConnected();
 
     //url to get user data 
     const userURL = SERVER_URL + '/api/user';
@@ -57,6 +57,59 @@ const Clipboard = ({ navigation, route }) => {
     //stores all the connected remote devices including itself in an array
     const [remoteDevices, setRemoteDevices] = useState([]);
 
+    //stores my server status 
+    const [serverStatus, setServerStatus] = useState('null');
+
+    //if the internet is offline then server is unreachable
+    useEffect(() => {
+        if (isOnline === false) {
+            setServerStatus('false');
+            AsyncStorage.setItem('serverStatus', 'false');
+        }
+
+    }, [isOnline])
+
+    //check my server status
+    const checkServerStatus = async () => {
+        try {
+            //fetches the server 
+            const reponse = await fetch(SERVER_URL);
+            const statusCode = reponse.status;
+            console.log("server status: ", statusCode);
+
+            if (statusCode === 200) {
+                AsyncStorage.setItem('serverStatus', 'true');
+                setServerStatus('true');
+            }
+            else {
+                AsyncStorage.setItem('serverStatus', 'false');
+                setServerStatus('false');
+            }
+
+        }
+        catch (error) {
+            // Handle fetch error
+            console.error('Error checking server status:', error.message);
+            AsyncStorage.setItem('serverStatus', 'false');
+            setServerStatus('false');
+        }
+    }
+
+    //checks if the server status state and set to 'null' after 10min of check status action
+    useEffect(() => {
+        let timer;
+        if (serverStatus === 'true' || 'false') {
+            timer = setTimeout(() => {
+                AsyncStorage.setItem('serverStatus', 'null');
+                setServerStatus('null');
+                console.log("timeout successfully");
+            }, 2 * 60 * 1000); //2 minutes
+        };
+
+        return () => clearTimeout(timer);
+    })
+
+
     //sets user data in local storage after redirecting to home
     useEffect(() => {
         if (user.name == '')
@@ -64,6 +117,27 @@ const Clipboard = ({ navigation, route }) => {
         else
             console.log('Error: user still exist after logout')
     }, [])
+
+    // ask for notification permission if no permission is given
+    useEffect(() => {
+        //function asking for notification permission
+        const NotifPermission = async () => {
+            const { status } = await Notification.requestPermissionsAsync();
+
+            if (status !== 'granted')
+                Alert.alert("failed to get permission");
+        }
+        NotifPermission();
+    }, []);
+
+    // //keep socket disconnected if the service hasn't started
+    // useEffect(() => {
+    //     if (start == false) {
+    //         if(socket.connected)
+    //             socket.close();
+    //     }
+
+    // }, [start])
 
 
     //function to get user data
@@ -174,17 +248,41 @@ const Clipboard = ({ navigation, route }) => {
         });
 
 
+        //Fired when a ping packet is received from the server.
+        socket.io.on("ping", () => {
+            console.log("socket is working and recieving packets of data!");
+        });
+
+        //Fired upon a connection error.
+        socket.io.on("error", async (error) => {
+            console.log("Error in socket connection: ", error);
+            await socket.connect();
+        });
+
+        //Fired upon a successful reconnection.
+        socket.io.on("reconnect", (attempt) => {
+            console.log("successfully connected to socket!");
+        });
+
+
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [socket]);
 
+    //handle clipboard change 
+    const handleCliboardChange = async () => {
+        const text = await clipboard.getStringAsync();
+        await AsyncStorage.setItem('clipboard', text);
+        setCopiedMsg(text);
+    };
 
     //listen for clipboard changes
     useEffect(() => {
+        const listener = clipboard.addClipboardListener(handleCliboardChange);
 
-        clipboard.addClipboardListener(async () => {
-            const text = await clipboard.getStringAsync();
-            setCopiedMsg(text);
-        })
+        return () => {
+            listener.remove();
+        }
+
     }, []);
 
     //emit the message via socket to all remote devices
@@ -212,13 +310,15 @@ const Clipboard = ({ navigation, route }) => {
 
     //handles starting and stopping socket service
     const handleService = () => {
-        if (!start) {
+        if (!start && isOnline) {
             handleUser();
             setStart(true);
+            Clipsync.startService();
             console.log('service started');
         } else {
             stopService();
             setStart(false);
+            Clipsync.stopService()
             console.log('service stopped');
         }
     }
@@ -232,6 +332,15 @@ const Clipboard = ({ navigation, route }) => {
         <SafeAreaView style={styles.safeArea}>
             <View style={styles.clipboard}>
                 <Navbar navigator={navigation} route={route} style={styles.navbar} />
+                <View style={styles.server_status}>
+                    <Text style={[styles.device_text, styles.status_text]}>Server Status: {serverStatus !== "null" ? ((serverStatus === 'true') ? 'Online🟢' : 'Offline🔴') : null}</Text>
+                    {serverStatus === 'null' ? <ButtonThemed
+                        text={'check Status'}
+                        onPress={checkServerStatus}
+                        type='serverStatus'
+                    // fontFamily={"JetBrainsMonoLight"}
+                    /> : null}
+                </View>
                 <ButtonThemed
                     text={start ? 'Stop Service' : 'Start Service'}
                     onPress={handleService}
@@ -239,7 +348,6 @@ const Clipboard = ({ navigation, route }) => {
                 // fontFamily={"JetBrainsMonoLight"}
                 />
                 <View style={styles.sendInfo}>
-                    {/* <Input style={ } text={text} handleText={ } /> */}
                     <TextInput
                         style={styles.input_clip}
                         onChangeText={(e) => setText(e)}
@@ -253,7 +361,7 @@ const Clipboard = ({ navigation, route }) => {
                 <Text style={styles.heading}>Connected Devices</Text>
 
                 <View className="connected-devices" style={styles.devicesContainer}>
-                    {remoteDevices.length !== undefined ? remoteDevices.map(element => {
+                    {remoteDevices.length !== undefined ? remoteDevices.map((element, idx) => {
 
                         //connected device details
                         const id = element.device_id;
@@ -262,7 +370,7 @@ const Clipboard = ({ navigation, route }) => {
                         const src = isMobile ? MobileIcon : LaptopIcon;
 
                         return (
-                            <View className="device" key={id} style={styles.device}>
+                            <View className="device" key={idx} style={styles.device}>
                                 <Image source={src} alt={device} style={styles.device_image} />
                                 <Text style={styles.device_text}>{device}</Text>
                             </View >
@@ -270,10 +378,7 @@ const Clipboard = ({ navigation, route }) => {
                     }) : null
                     }
                 </View>
-
-                {/* <Text style={styles.text}>{user.name}</Text>
-            <Text style={styles.text}>{user.email}</Text>
-            <Text style={styles.text}>{user.id}</Text>*/}
+                {isOnline === true ? null : <Offline />}
             </View >
         </SafeAreaView>
     )
@@ -288,6 +393,16 @@ const styles = StyleSheet.create({
         justifyContent: "center",
         alignItems: "center",
         backgroundColor: '#282828',
+    },
+    server_status: {
+        display: "flex",
+        flexDirection: 'row',
+        position: 'absolute',
+        top: 86,
+        right: 2
+    },
+    status_text: {
+        paddingTop: 6
     },
     heading: {
         color: 'white',
